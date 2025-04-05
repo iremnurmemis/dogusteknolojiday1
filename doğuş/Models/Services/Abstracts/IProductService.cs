@@ -4,14 +4,14 @@ namespace doğuş.Models.Services.Abstracts
 {
     public interface IProductService
     {
-        List<ProductViewModel> GetAll();
-        CreateProductViewModel CreateViewModel();
-        CreateProductViewModel CreateViewModel(CreateProductViewModel createProductViewModel);
-        void Create(CreateProductViewModel createProductViewModel);
-        ProductViewModel? GetById(int id);
-        void Remove(int id);
-        EditProductViewModel? EditViewModel(int id);
-        EditProductViewModel? EditViewModel(EditProductViewModel editProductViewModel);
-        void Update(EditProductViewModel editProductViewModel);
+        Task<List<ProductViewModel>> GetAll();
+        Task<CreateProductViewModel> CreateViewModel();
+        Task<CreateProductViewModel> CreateViewModel(CreateProductViewModel createProductViewModel);
+        Task Create(CreateProductViewModel createProductViewModel);
+        Task<ProductViewModel?> GetById(int id);
+        Task Remove(int id);
+        Task<EditProductViewModel?> EditViewModel(int id);
+        Task<EditProductViewModel?> EditViewModel(EditProductViewModel editProductViewModel);
+        Task Update(EditProductViewModel editProductViewModel);
     }
 }

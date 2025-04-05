@@ -1,26 +1,106 @@
-﻿using doğuş.Models.Repositories.Abstracts;
-using doğuş.Models.Repositories.Concretes;
+﻿using doğuş.Models.Repositories;
 using doğuş.Models.Repositories.Entities;
 using doğuş.Models.Services.Abstracts;
 using doğuş.Models.Services.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace doğuş.Models.Services.Concretes
 {
     public class ProductService : IProductService
     {
-        private readonly IProductRepository _repository;
-        private readonly ICategoryRepository _categoryRepository;
+        private readonly IGenericRepository<Product> _productRepository;
+        private readonly IGenericRepository<Category> _categoryRepository;
+        private readonly AppDbContext _context; // Include işlemi için DbContext
 
-        public ProductService(IProductRepository repository, ICategoryRepository categoryRepository)
+        public ProductService(
+            IGenericRepository<Product> productRepository,
+            IGenericRepository<Category> categoryRepository,
+            AppDbContext context)
         {
-            _repository = repository;
+            _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _context = context;
         }
 
-        public void Create(CreateProductViewModel createProductViewModel)
+      
+
+        public async Task<CreateProductViewModel> CreateViewModel()
         {
-            //formdan gelen veriyi kaydediyor 
+            var categories = await _categoryRepository.GetAllAsync();
+            var createProductViewModel = new CreateProductViewModel
+            {
+                CategoryList = new SelectList(categories, "Id", "Name")
+            };
+            return createProductViewModel;
+        }
+
+        public async Task<CreateProductViewModel> CreateViewModel(CreateProductViewModel createProductViewModel)
+        {
+            var categories = await _categoryRepository.GetAllAsync();
+            createProductViewModel.CategoryList = new SelectList(categories, "Id", "Name", createProductViewModel.CategoryId);
+            return createProductViewModel;
+        }
+
+        public async Task<EditProductViewModel?> EditViewModel(int id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                return null;
+
+            var categories = await _categoryRepository.GetAllAsync();
+            var editProductViewModel = new EditProductViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock,
+                CategoryId = product.CategoryId,
+                CategoryList = new SelectList(categories, "Id", "Name", product.CategoryId)
+            };
+            return editProductViewModel;
+        }
+
+        public async Task<EditProductViewModel?> EditViewModel(EditProductViewModel editProductViewModel)
+        {
+            var categories = await _categoryRepository.GetAllAsync();
+            editProductViewModel.CategoryList = new SelectList(categories, "Id", "Name", editProductViewModel.CategoryId);
+            return editProductViewModel;
+        }
+
+        public async Task<List<ProductViewModel>> GetAll()
+        {
+            // Category dahil edilerek getiriliyor
+            var products = await _context.Products.Include(p => p.Category).ToListAsync();
+
+            return products.Select(product => new ProductViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = (product.Price * 1.20m).ToString("C"),
+                Stock = product.Stock,
+                CategoryName = product.Category?.Name
+            }).ToList();
+        }
+
+        public async Task<ProductViewModel?> GetById(int id)
+        {
+            var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null) return null;
+
+            return new ProductViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = (product.Price * 1.20m).ToString("C"),
+                Stock = product.Stock,
+                CategoryName = product.Category?.Name
+            };
+        }
+
+        public async Task Create(CreateProductViewModel createProductViewModel)
+        {
             var product = new Product
             {
                 Name = createProductViewModel.Name,
@@ -30,101 +110,17 @@ namespace doğuş.Models.Services.Concretes
                 CategoryId = createProductViewModel.CategoryId!.Value,
             };
 
-             _repository.Add(product);
+            await _productRepository.AddAsync(product);
         }
 
-        public CreateProductViewModel CreateViewModel()
+        public async Task Remove(int id)
         {
-            //Form ilk açıldığında kullanıcıya seçim yapılabilecek kategori listesini sunuyor
-            var categories = _categoryRepository.GetAll();
-            var createProductViewModel = new CreateProductViewModel();
-            createProductViewModel.CategoryList = new SelectList(categories, "Id", "Name");
-            return createProductViewModel;
+            await _productRepository.DeleteAsync(id);
         }
 
-        public CreateProductViewModel CreateViewModel(CreateProductViewModel createProductViewModel)
+        public async Task Update(EditProductViewModel editProductViewModel)
         {
-            //Kullanıcı formda bir hata yaptıysa ve form tekrar gösterilecekse, daha önce girilen bilgileri kaybetmeden kategori listesini tekrar dolduruyor
-            var categories = _categoryRepository.GetAll();
-            createProductViewModel.CategoryList = new SelectList(categories, "Id", "Name", createProductViewModel.CategoryId);
-            return createProductViewModel;
-        }
-
-        public EditProductViewModel? EditViewModel(int id)
-        {
-            var product = _repository.GetById(id);
-            if (product == null) 
-                return null;
-            var categories = _categoryRepository.GetAll();
-            var editProductViewModel = new EditProductViewModel
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Stock = product.Stock,
-                CategoryId = product.CategoryId
-            };
-            editProductViewModel.CategoryList = new SelectList(categories, "Id", "Name", editProductViewModel.CategoryId);
-            return editProductViewModel;
-
-        }
-
-        public EditProductViewModel? EditViewModel(EditProductViewModel editProductViewModel)
-        {
-            var categories = _categoryRepository.GetAll();
-            editProductViewModel.CategoryList = new SelectList(categories, "Id", "Name", editProductViewModel.CategoryId);
-            return editProductViewModel;
-        }
-
-        public List<ProductViewModel> GetAll()
-        {
-            var products=_repository.GetAll();
-
-            var productListViewModel = new List<ProductViewModel>();
-
-            foreach (var product in products)
-            {
-                var productViewModel = new ProductViewModel
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    Price = (product.Price * 1.20m).ToString("C"),
-                    Stock = product.Stock,
-                    CategoryName=product.Category.Name,
-                };
-                productListViewModel.Add(productViewModel);
-            }
-
-            return productListViewModel;
-        }
-
-        public ProductViewModel? GetById(int id)
-        {
-            var product=_repository.GetById(id);
-            if (product == null) return null!;
-            var productViewModel = new ProductViewModel
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Price = (product.Price * 1.20m).ToString("C"),
-                Stock = product.Stock,
-                CategoryName = product.Category.Name
-            };
-            return productViewModel;
-
-        }
-
-        public void Remove(int id)
-        {
-            var product = _repository.GetById(id);
-            if (product != null) 
-                _repository.Delete(product);
-        }
-
-        public void Update(EditProductViewModel editProductViewModel)
-        {
-            var product = _repository.GetById(editProductViewModel.Id);
+            var product = await _productRepository.GetByIdAsync(editProductViewModel.Id);
             if (product == null)
                 return;
 
@@ -133,7 +129,9 @@ namespace doğuş.Models.Services.Concretes
             product.Price = editProductViewModel.Price!.Value;
             product.Stock = editProductViewModel.Stock!.Value;
             product.CategoryId = editProductViewModel.CategoryId!.Value;
-            _repository.Update(product);
+
+            await _productRepository.UpdateAsync(product);
         }
+
     }
 }

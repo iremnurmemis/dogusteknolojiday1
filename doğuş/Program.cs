@@ -1,6 +1,4 @@
 using doðuþ.Models.Repositories;
-using doðuþ.Models.Repositories.Abstracts;
-using doðuþ.Models.Repositories.Concretes;
 using doðuþ.Models.Services.Abstracts;
 using doðuþ.Models.Services.Concretes;
 using Microsoft.EntityFrameworkCore;
@@ -17,8 +15,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 builder.Services.AddScoped<IProductService,ProductService>();
-builder.Services.AddScoped<IProductRepository,ProductRepository>();
-builder.Services.AddScoped<ICategoryRepository,CategoryRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
 
 var app = builder.Build();
 

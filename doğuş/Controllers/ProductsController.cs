@@ -15,49 +15,50 @@ namespace doğuş.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var products = _productService.GetAll();
+            var products = await _productService.GetAll();
             return View(products);
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var createProductViewModel=_productService.CreateViewModel();
+            var createProductViewModel = await _productService.CreateViewModel();
             return View(createProductViewModel);
         }
 
         [HttpPost]
-        public IActionResult Create(CreateProductViewModel createProductViewModel)
+        public async Task<IActionResult> Create(CreateProductViewModel createProductViewModel)
         {
             if (!ModelState.IsValid)
-                return View(_productService.CreateViewModel(createProductViewModel));
+                return View(await _productService.CreateViewModel(createProductViewModel));
 
-            _productService.Create(createProductViewModel);
+            await _productService.Create(createProductViewModel);
             return RedirectToAction("Index");
         }
 
         [HttpGet]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _productService.Remove(id);
+            await _productService.Remove(id);
             return RedirectToAction("Index");
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            return View(_productService.EditViewModel(id));
+            var viewModel = await _productService.EditViewModel(id);
+            return View(viewModel);
         }
 
         [HttpPost]
-        public IActionResult Edit(EditProductViewModel editProductViewModel)
+        public async Task<IActionResult> Edit(EditProductViewModel editProductViewModel)
         {
-            if (!ModelState.IsValid) 
-                return View(_productService.EditViewModel(editProductViewModel));
+            if (!ModelState.IsValid)
+                return View(await _productService.EditViewModel(editProductViewModel));
 
-            _productService.Update(editProductViewModel);
+            await _productService.Update(editProductViewModel);
             return RedirectToAction("Index");
         }
 

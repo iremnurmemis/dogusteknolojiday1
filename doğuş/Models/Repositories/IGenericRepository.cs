@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace doğuş.Models.Repositories.Abstracts
+namespace doğuş.Models.Repositories
 {
     public interface IGenericRepository<T> where T : class
     {
